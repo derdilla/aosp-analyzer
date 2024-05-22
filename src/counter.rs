@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fs::DirEntry;
+use std::path::PathBuf;
 use crate::lang_stats::LangStats;
 use crate::language::Language;
 
@@ -18,7 +19,7 @@ impl CountContext {
         }
     }
 
-    pub fn insert_file(&mut self, file: DirEntry) {
+    pub fn insert_file(&mut self, file: &PathBuf) {
         let file = SourceFile::new(file);
         self.children.push(Box::new(file));
     }
@@ -36,19 +37,19 @@ pub struct SourceFile {
 }
 
 impl SourceFile {
-    pub fn new(file: DirEntry)  -> Self {
-        let lang = Language::new(file.file_name().to_str().unwrap());
+    pub fn new(file: &PathBuf)  -> Self {
+        let lang = Language::new(file.file_name().unwrap().to_str().unwrap());
         let mut stats = LangStats::new();
-        stats.add(file.path().to_str().unwrap(), &lang);
+        stats.add(file.to_str().unwrap(), &lang);
         SourceFile {
-            path: file.path().as_path().to_str().unwrap().to_string(),
+            path: file.as_path().to_str().unwrap().to_string(),
             lang,
             stats
         }
     }
 }
 
-pub trait HasStats: Debug {
+pub trait HasStats: Debug + Send {
     fn stats(&self) -> HashMap<Language, LangStats>;
 }
 

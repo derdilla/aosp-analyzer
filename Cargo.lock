@@ -157,5 +157,6 @@ dependencies = [
  "bytecount",
  "jwalk",
  "once_cell",
+ "rayon",
  "regex",
 ]

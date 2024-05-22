@@ -1,7 +1,9 @@
 use std::fs;
 use std::fs::{DirEntry, FileType};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
+use rayon::prelude::IntoParallelRefIterator;
+use rayon::iter::ParallelIterator;
 use crate::counter::{CountContext, HasStats, SourceFile};
 use crate::scanner::Scanner;
 
@@ -26,29 +28,35 @@ fn main() {
      */
     let start = SystemTime::now();
 
-    let mut context = CountContext::new();
-    scan_dir(ANDROID_SOURCE, &mut context);
+    let context = CountContext::new();
+    let context = scan_dir(ANDROID_SOURCE, context);
     // println!("{:#?}", context);
     println!("Analyzing {ANDROID_SOURCE} took: {}s", SystemTime::now().duration_since(start).unwrap().as_secs())
-    // 20s
-
-    // TODO: async & multithread reading
+    // Multithreading is faster: 20s -> 3s
 }
 
-fn scan_dir<P: AsRef<Path>>(dir: P, context: &mut CountContext) {
+fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
     // TODO: Scanner filtering
-
-    for entry in fs::read_dir(dir).unwrap() {
-        if let Ok(entry) = entry {
-            let entry_type = entry.file_type().unwrap();
-            if entry_type.is_file() {
-                context.insert_file(entry);
-            } else if entry_type.is_dir() {
-                let mut inner_context = CountContext::new();
-                scan_dir(entry.path(), &mut inner_context);
-                context.insert_context(inner_context);
+    let data = fs::read_dir(dir)
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .collect::<Vec<PathBuf>>()
+        .par_iter()
+        .map(|entry: &PathBuf| {
+            if entry.is_dir() {
+                scan_dir(entry, CountContext::new())
+            } else if entry.is_file() {
+                let mut context = CountContext::new();
+                context.insert_file(&entry);
+                context
+            } else {
+                CountContext::new()
             }
-        }
+        })
+        .collect::<Vec<CountContext>>();
+    for e in data {
+        context.insert_context(e);
     }
+    context
 }
 
