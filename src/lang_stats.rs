@@ -5,7 +5,7 @@ use crate::language::Language;
 use crate::language::Language::OTHER;
 
 /// Detailed statistics on source code.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct LangStats {
     // Total counts are maintained to be able to verify data consistency.
     total_files: u64,
@@ -45,7 +45,7 @@ impl LangStats {
     /// Counts stats in a file and adds them.
     ///
     /// When the file format doesn't match or the  no stats are added and false is returned.
-    pub fn add(&mut self, path: &str, lang: Language) {
+    pub fn add(&mut self, path: &str, lang: &Language) {
         self.total_files += 1;
         match lang {
             Language::JAVA => self.analyze_java(path),
@@ -60,6 +60,19 @@ impl LangStats {
             Language::ASSEMBLY => self.analyze_general(path, CommentStyle::UNKNOWN), // TODO: implement
             OTHER(_) => self.analyze_general(path, CommentStyle::UNKNOWN),
         }
+    }
+
+    pub fn join(&mut self, other: &Self) {
+        self.total_files += other.total_files;
+        self.code_files += other.code_files;
+        self.test_files += other.test_files;
+        self.total_lines += other.total_lines;
+        self.code_lines += other.code_lines;
+        self.code_comment_lines += other.code_comment_lines;
+        self.code_empty_lines += other.code_empty_lines;
+        self.test_lines += other.test_lines;
+        self.test_comment_lines += other.test_comment_lines;
+        self.code_empty_lines += other.code_empty_lines;
     }
 
     /// Analyze a undifferentiated file.
