@@ -1,7 +1,7 @@
 use crate::language::Language::OTHER;
 
 /// Common supported programming languages indicated by file extensions.
-#[derive(Eq, Hash, PartialEq, Debug)]
+#[derive(Eq, Hash, PartialEq, Clone, Debug)]
 pub enum Language {
     JAVA,
     KOTLIN,

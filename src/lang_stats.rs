@@ -1,6 +1,4 @@
-use std::{fs, io};
-use std::io::{BufRead, BufReader};
-use std::path::Path;
+use std::{fs};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use crate::language::Language;
@@ -9,7 +7,6 @@ use crate::language::Language::OTHER;
 /// Detailed statistics on source code.
 #[derive(Debug)]
 pub struct LangStats {
-    lang: Language,
     // Total counts are maintained to be able to verify data consistency.
     total_files: u64,
     code_files: u64,
@@ -30,9 +27,8 @@ pub struct LangStats {
 }
 
 impl LangStats {
-    pub fn new(lang: Language) -> Self {
+    pub fn new() -> Self {
         LangStats {
-            lang,
             total_files: 0,
             code_files: 0,
             test_files: 0,
@@ -49,25 +45,20 @@ impl LangStats {
     /// Counts stats in a file and adds them.
     ///
     /// When the file format doesn't match or the  no stats are added and false is returned.
-    pub fn add(&mut self, path: &str) -> bool {
-        if self.lang == Language::new(&path) {
-            self.total_files += 1;
-            match self.lang {
-                Language::JAVA => self.analyze_java(path),
-                Language::KOTLIN => self.analyze_java(path),
-                Language::C => self.analyze_java(path),
-                Language::CPP => self.analyze_java(path),
-                Language::RUST => self.analyze_java(path), // FIXME: ignoring in file tests
-                Language::PYTHON => self.analyze_bash(path), // FIXME: ignoring multiline string comments and tests
-                Language::GRADLE => self.analyze_java(path),
-                Language::CMAKE => self.analyze_bash(path), // https://cmake.org/cmake/help/v3.1/manual/cmake-language.7.html#comments
-                Language::MAKEFILE => self.analyze_bash(path),
-                Language::ASSEMBLY => self.analyze_general(path, CommentStyle::UNKNOWN), // TODO: implement
-                OTHER(_) => self.analyze_general(path, CommentStyle::UNKNOWN),
-            }
-            true
-        } else {
-            false
+    pub fn add(&mut self, path: &str, lang: Language) {
+        self.total_files += 1;
+        match lang {
+            Language::JAVA => self.analyze_java(path),
+            Language::KOTLIN => self.analyze_java(path),
+            Language::C => self.analyze_java(path),
+            Language::CPP => self.analyze_java(path),
+            Language::RUST => self.analyze_java(path), // FIXME: ignoring in file tests
+            Language::PYTHON => self.analyze_bash(path), // FIXME: ignoring multiline string comments and tests
+            Language::GRADLE => self.analyze_java(path),
+            Language::CMAKE => self.analyze_bash(path), // https://cmake.org/cmake/help/v3.1/manual/cmake-language.7.html#comments
+            Language::MAKEFILE => self.analyze_bash(path),
+            Language::ASSEMBLY => self.analyze_general(path, CommentStyle::UNKNOWN), // TODO: implement
+            OTHER(_) => self.analyze_general(path, CommentStyle::UNKNOWN),
         }
     }
 
@@ -77,6 +68,7 @@ impl LangStats {
         if path.contains("test") {
             self.test_files += 1;
             if let Some(lines) = lines {
+                self.total_lines += lines.0 as u128;
                 self.test_lines += lines.0 as u128;
                 self.test_comment_lines += lines.1 as u128;
                 self.test_empty_lines += lines.2 as u128;
@@ -85,6 +77,7 @@ impl LangStats {
         } else {
             self.code_files += 1;
             if let Some(lines) = lines {
+                self.total_lines += lines.0 as u128;
                 self.code_lines += lines.0 as u128;
                 self.code_comment_lines += lines.1 as u128;
                 self.code_empty_lines += lines.2 as u128;
@@ -100,6 +93,7 @@ impl LangStats {
         let lines = count_differentiated_lines(path, CommentStyle::BASH);
         self.code_files += 1;
         if let Some(lines) = lines {
+            self.total_lines += lines.0 as u128;
             self.code_lines += lines.0 as u128;
             self.code_comment_lines += lines.1 as u128;
             self.code_empty_lines += lines.2 as u128;
@@ -114,25 +108,6 @@ enum CommentStyle {
     C,
     // No comment counting.
     UNKNOWN,
-}
-
-/// Counts lines of code in a single file.
-fn count_lines<P: AsRef<Path>>(path: P) -> Result<usize, io::Error> {
-    let handle = fs::File::open(path).unwrap();
-    let mut reader = BufReader::with_capacity(1024 * 32, handle);
-    let mut count = 0;
-    loop {
-        let len = {
-            let buf = reader.fill_buf()?;
-            if buf.is_empty() {
-                break;
-            }
-            count += bytecount::count(&buf, b'\n');
-            buf.len()
-        };
-        reader.consume(len);
-    }
-    Ok(count)
 }
 
 /// Counts all_lines, comment_lines and empty_lines in a [file].

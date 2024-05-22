@@ -6,8 +6,6 @@ use crate::language::Language;
 /// Code stats in a directory.
 #[derive(Debug)]
 pub struct CountContext {
-    /// Path of the folder or file that is counted.
-    path: String,
     /// File extension and amount of lines in that extension.
     data: HashMap<Language, LangStats>
 }
@@ -15,7 +13,6 @@ pub struct CountContext {
 impl CountContext {
     pub fn new() -> Self {
         CountContext {
-            path: String::new(),
             data: HashMap::new(),
         }
     }
@@ -26,10 +23,8 @@ impl CountContext {
             return; // TODO
         }
 
-        let stats = self.data.entry(lang)
-            .or_insert(LangStats::new(Language::new(file.file_name.to_str().unwrap())));
-        if !stats.add(file.path().to_str().unwrap()) {
-            // TODO: error propagation
-        }
+        let stats = self.data.entry(lang.clone())
+            .or_insert(LangStats::new());
+        stats.add(file.path().to_str().unwrap(), lang);
     }
 }

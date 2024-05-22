@@ -1,4 +1,3 @@
-use std::path::Path;
 use jwalk::{WalkDir, WalkDirGeneric};
 
 /// Discovers files in subdirectories and creates batches.
@@ -13,7 +12,7 @@ impl Scanner {
     pub fn scan(root: &str) -> Self {
         let files = WalkDir::new(&root)
             .skip_hidden(false)
-            .process_read_dir(|depth, path, state, children| {
+            .process_read_dir(|_depth, path, _state, children| {
                 if path.ends_with(".repo")
                     || path.ends_with(".git")
                     || path.ends_with("prebuilt")
