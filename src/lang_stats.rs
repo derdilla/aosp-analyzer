@@ -7,6 +7,7 @@ use crate::language::Language;
 use crate::language::Language::OTHER;
 
 /// Detailed statistics on source code.
+#[derive(Debug)]
 pub struct LangStats {
     lang: Language,
     // Total counts are maintained to be able to verify data consistency.
@@ -29,10 +30,26 @@ pub struct LangStats {
 }
 
 impl LangStats {
+    pub fn new(lang: Language) -> Self {
+        LangStats {
+            lang,
+            total_files: 0,
+            code_files: 0,
+            test_files: 0,
+            total_lines: 0,
+            code_lines: 0,
+            code_comment_lines: 0,
+            code_empty_lines: 0,
+            test_lines: 0,
+            test_comment_lines: 0,
+            test_empty_lines: 0,
+        }
+    }
+
     /// Counts stats in a file and adds them.
     ///
     /// When the file format doesn't match or the  no stats are added and false is returned.
-    pub fn add<>(&mut self, path: &str) -> bool {
+    pub fn add(&mut self, path: &str) -> bool {
         if self.lang == Language::new(&path) {
             self.total_files += 1;
             match self.lang {

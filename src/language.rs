@@ -1,6 +1,7 @@
 use crate::language::Language::OTHER;
 
 /// Common supported programming languages indicated by file extensions.
+#[derive(Eq, Hash, PartialEq, Debug)]
 pub enum Language {
     JAVA,
     KOTLIN,
@@ -38,12 +39,6 @@ impl Language {
             "s" | "S" | "asm" => Language::ASSEMBLY,
             _ => OTHER(extension.to_string())
         }
-    }
-}
-
-impl PartialEq for Language {
-    fn eq(&self, other: &Self) -> bool {
-        self == other
     }
 }
 

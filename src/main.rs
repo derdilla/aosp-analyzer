@@ -1,11 +1,18 @@
+mod counter;
+mod language;
+mod lang_stats;
+mod scanner;
+
 use std::{env, fs, io, path, process, thread};
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::sync::mpsc;
 use regex::Regex;
+use crate::counter::CountContext;
+use crate::scanner::Scanner;
 
 const ANDROID_SOURCE: &str = "/home/derdilla/android-source/aosp14/";
-
+/*
 /// Beginning of path names that are ignored.
 const EXCLUDED_DIRS: [&str; 22] = ["./.repo", "./tools", "./prebuilt", "./out", "./external",
     "./device", "./kernel/prebuilts", "./test/catbox/prebuilts", "./developers/build/prebuilts",
@@ -188,4 +195,21 @@ pub fn get_filetype(path: &str) -> Option<&str> {
     path::Path::new(path)
         .extension()?
         .to_str()
+}
+*/
+fn main() {
+    let scan = Scanner::scan(ANDROID_SOURCE);
+    let mut context = CountContext::new();
+    for f in scan.files {
+        if let Ok(f) = f {
+            context.insert(f);
+        } else {
+            // TODO: error
+        }
+    }
+
+    println!("{:?}", context);
+
+
+    // TODO: async reading
 }
