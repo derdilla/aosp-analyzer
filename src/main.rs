@@ -1,16 +1,13 @@
 use std::fs;
-use std::fs::{DirEntry, FileType};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
-use crate::counter::{CountContext, HasStats, SourceFile};
-use crate::scanner::Scanner;
+use crate::counter::{CountContext, HasStats};
 
 mod counter;
 mod language;
 mod lang_stats;
-mod scanner;
 
 //const ANDROID_SOURCE: &str = "/home/derdilla/android-source/aosp14/";
 const ANDROID_SOURCE: &str = "/home/derdilla/Coding/Java";
@@ -30,18 +27,23 @@ fn main() {
 
     let context = CountContext::new();
     let context = scan_dir(ANDROID_SOURCE, context);
-    // println!("{:#?}", context);
+    println!("{:#?}", context);
     println!("Analyzing {ANDROID_SOURCE} took: {}s", SystemTime::now().duration_since(start).unwrap().as_secs())
     // Multithreading is faster: 20s -> 3s
 }
 
 fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
-    // TODO: Scanner filtering
     let data = fs::read_dir(dir)
         .unwrap()
         .map(|e| e.unwrap().path())
         .collect::<Vec<PathBuf>>()
         .par_iter()
+        .filter(|path| !(path.ends_with(".repo")
+            || path.ends_with(".git")
+            || path.ends_with("prebuilt")
+            || path.ends_with("prebuilts")
+            || path.ends_with("out"))
+        )
         .map(|entry: &PathBuf| {
             if entry.is_dir() {
                 scan_dir(entry, CountContext::new())
