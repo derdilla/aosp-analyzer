@@ -46,6 +46,8 @@ fn main() {
     let start = SystemTime::now();
     context.stats();
     println!("Building stats took: {}s", SystemTime::now().duration_since(start).unwrap().as_secs());
+
+    println!("{}", print_hierarchy(&context, 0));
 }
 
 fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
@@ -81,5 +83,17 @@ fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
         context.insert_context(e);
     }
     context
+}
+
+fn print_hierarchy(context: &CountContext, level: usize) -> String {
+    let mut str = context.name() + "\n";
+    for e in &context.children {
+        if let Some(context) = e.context() {
+            str += (" ".repeat(level) + "├" + print_hierarchy(context, level + 1).as_str()).as_str();
+        } else {
+            str += (" ".repeat(level) + "├" + e.name().as_str() + "\n").as_str();
+        }
+    }
+    str
 }
 

@@ -8,9 +8,9 @@ use crate::language::Language;
 /// Code stats of a directory.
 #[derive(Debug)]
 pub struct CountContext {
-    dir_name: String,
+    pub dir_name: String,
     /// Contained files and directories.
-    children: Vec<Box<dyn HasStats>>,
+    pub children: Vec<Box<dyn HasStats>>,
 }
 
 impl CountContext {
@@ -76,6 +76,9 @@ pub trait HasStats: Debug + Send {
     fn stats(&self) -> HashMap<Language, LangStats>;
 
     fn file(&self) -> Option<SourceFile>;
+
+    fn context<'a>(&'a self) -> Option<&'a CountContext>;
+    fn name(&self) -> String;
 }
 
 impl HasStats for CountContext {
@@ -94,6 +97,14 @@ impl HasStats for CountContext {
     fn file(&self) -> Option<SourceFile> {
         None
     }
+
+    fn context<'a>(&'a self) -> Option<&'a CountContext> {
+        Some(self)
+    }
+
+    fn name(&self) -> String {
+        self.dir_name.to_string()
+    }
 }
 
 impl HasStats for SourceFile {
@@ -107,5 +118,13 @@ impl HasStats for SourceFile {
 
     fn file(&self) -> Option<SourceFile> {
         Some(self.clone())
+    }
+
+    fn context<'a>(&'a self) -> Option<&'a CountContext> {
+        None
+    }
+
+    fn name(&self) -> String {
+        self.file_name.to_string()
     }
 }
