@@ -34,7 +34,7 @@ fn main() {
     let context = scan_dir(ANDROID_SOURCE, context);
     //println!("{:#?}", context);
     println!("Analyzing {ANDROID_SOURCE} took: {}ms", SystemTime::now().duration_since(start).unwrap().as_millis());
-    // 511ms -> 941ms -> 524ms -> 509ms
+    // 511ms -> 941ms -> 524ms -> 509ms -> 477ms
 
     let peak_mem = PEAK_ALLOC.peak_usage_as_gb();
     println!("The max amount that was used {}GB", peak_mem);
@@ -42,12 +42,13 @@ fn main() {
     // -> 0.33434874GB
     println!("The currently used amount is {}GB", PEAK_ALLOC.current_usage_as_gb());
     // 0.01678145GB -> 0.016183667GB -> 0.022987688GB -> 0.02162337GB -> 0.014041128GB
+    // -> 0.010378797GB
 
     let start = SystemTime::now();
     context.stats();
     println!("Building stats took: {}s", SystemTime::now().duration_since(start).unwrap().as_secs());
 
-    println!("{}", print_hierarchy(&context, 0));
+    //println!("{}", print_hierarchy(&context, 0));
 }
 
 fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
@@ -89,9 +90,9 @@ fn print_hierarchy(context: &CountContext, level: usize) -> String {
     let mut str = context.name() + "\n";
     for e in &context.children {
         if let Some(context) = e.context() {
-            str += (" ".repeat(level) + "├" + print_hierarchy(context, level + 1).as_str()).as_str();
+            str += (" ".repeat(level) + "├ " + print_hierarchy(context, level + 1).as_str()).as_str();
         } else {
-            str += (" ".repeat(level) + "├" + e.name().as_str() + "\n").as_str();
+            str += (" ".repeat(level) + "├ " + e.name().as_str() + "\n").as_str();
         }
     }
     str

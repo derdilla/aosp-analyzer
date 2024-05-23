@@ -33,7 +33,9 @@ impl CountContext {
     pub fn insert_context(&mut self, dir: Self) {
         if dir.children.len() == 1 {
             if let Some(mut file) = dir.children.first().unwrap().file() {
-                file.file_name = dir.dir_name + "/" + file.file_name.as_str();
+                if dir.dir_name != file.file_name {
+                    file.file_name = dir.dir_name + "/" + file.file_name.as_str();
+                }
                 self.children.push(Box::new(file));
             } else {
                 self.children.push(Box::new(dir));
