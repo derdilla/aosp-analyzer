@@ -53,7 +53,7 @@ impl CountContext {
 #[derive(Clone, Debug)]
 pub struct SourceFile {
     file_name: String,
-    lang: Language,
+    pub lang: Language,
     pub code_stats: Option<FileStats>,
     pub test_stats: Option<FileStats>,
 }

@@ -1,10 +1,13 @@
+use std::collections::HashMap;
 use std::fs;
+use std::ops::Add;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use peak_alloc::PeakAlloc;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
 use crate::counter::{CountContext, HasStats};
+use crate::language::Language;
 
 mod counter;
 mod language;
@@ -46,9 +49,14 @@ fn main() {
 
     let start = SystemTime::now();
     context.stats();
-    println!("Building stats took: {}s", SystemTime::now().duration_since(start).unwrap().as_secs());
+    println!("Building stats took: {}ms", SystemTime::now()
+        .duration_since(start).unwrap()
+        .as_millis());
 
     //println!("{}", print_hierarchy(&context, 0));
+    let mut map = HashMap::<Language, u32>::new();
+    count_extensions(&context, &mut map);
+    // println!("Files: {:#?}", map);
 }
 
 fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
@@ -96,5 +104,17 @@ fn print_hierarchy(context: &CountContext, level: usize) -> String {
         }
     }
     str
+}
+
+/// HashMap::<Language, u32>::new()
+fn count_extensions(context: &CountContext, map: &mut HashMap::<Language, u32>) {
+    for e in &context.children {
+        if let Some(context) = e.context() {
+            count_extensions(context, map);
+        } else if let Some(file) = e.file() {
+            let mut entry = map.entry(file.lang).or_insert(0);
+            *entry += 1;
+        }
+    }
 }
 
