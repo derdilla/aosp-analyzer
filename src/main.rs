@@ -34,13 +34,14 @@ fn main() {
     let context = scan_dir(ANDROID_SOURCE, context);
     //println!("{:#?}", context);
     println!("Analyzing {ANDROID_SOURCE} took: {}ms", SystemTime::now().duration_since(start).unwrap().as_millis());
-    // 511ms -> 941ms -> 524ms
+    // 511ms -> 941ms -> 524ms -> 509ms
 
     let peak_mem = PEAK_ALLOC.peak_usage_as_gb();
     println!("The max amount that was used {}GB", peak_mem);
     // 0.39365256GB -> 0.34015447GB -> 0.3339298GB -> 0.34041083GB -> 0.30123457GB
+    // -> 0.33434874GB
     println!("The currently used amount is {}GB", PEAK_ALLOC.current_usage_as_gb());
-    // 0.01678145GB -> 0.016183667GB -> 0.022987688GB -> 0.02162337GB
+    // 0.01678145GB -> 0.016183667GB -> 0.022987688GB -> 0.02162337GB -> 0.014041128GB
 
     let start = SystemTime::now();
     context.stats();

@@ -31,7 +31,16 @@ impl CountContext {
     }
 
     pub fn insert_context(&mut self, dir: Self) {
-        self.children.push(Box::new(dir));
+        if dir.children.len() == 1 {
+            if let Some(mut file) = dir.children.first().unwrap().file() {
+                file.file_name = dir.dir_name + "/" + file.file_name.as_str();
+                self.children.push(Box::new(file));
+            } else {
+                self.children.push(Box::new(dir));
+            }
+        } else {
+            self.children.push(Box::new(dir));
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -65,6 +74,8 @@ impl SourceFile {
 
 pub trait HasStats: Debug + Send {
     fn stats(&self) -> HashMap<Language, LangStats>;
+
+    fn file(&self) -> Option<SourceFile>;
 }
 
 impl HasStats for CountContext {
@@ -79,6 +90,10 @@ impl HasStats for CountContext {
 
         all_stats
     }
+
+    fn file(&self) -> Option<SourceFile> {
+        None
+    }
 }
 
 impl HasStats for SourceFile {
@@ -88,5 +103,9 @@ impl HasStats for SourceFile {
         stats.add(&self);
         map.insert(self.lang.clone(), stats);
         map
+    }
+
+    fn file(&self) -> Option<SourceFile> {
+        Some(self.clone())
     }
 }
