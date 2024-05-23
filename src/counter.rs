@@ -1,51 +1,65 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::fs::DirEntry;
 use std::path::PathBuf;
+use crate::file_stats::FileStats;
 use crate::lang_stats::LangStats;
 use crate::language::Language;
 
 /// Code stats of a directory.
 #[derive(Debug)]
 pub struct CountContext {
+    dir_name: String,
     /// Contained files and directories.
     children: Vec<Box<dyn HasStats>>,
 }
 
 impl CountContext {
-    pub fn new() -> Self {
+    pub fn new(dir_name: String) -> Self {
         CountContext {
+            dir_name,
             children: vec![],
         }
     }
 
+    /// Add stats of a non-ignored file
     pub fn insert_file(&mut self, file: &PathBuf) {
         let file = SourceFile::new(file);
-        self.children.push(Box::new(file));
+        if let Some(file) = file {
+            self.children.push(Box::new(file));
+        }
+
     }
 
     pub fn insert_context(&mut self, dir: Self) {
         self.children.push(Box::new(dir));
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.children.is_empty()
+    }
 }
 
 #[derive(Clone, Debug)]
 pub struct SourceFile {
-    path: String,
+    file_name: String,
     lang: Language,
-    stats: LangStats,
+    pub code_stats: Option<FileStats>,
+    pub test_stats: Option<FileStats>,
 }
 
 impl SourceFile {
-    pub fn new(file: &PathBuf)  -> Self {
-        let lang = Language::new(file.file_name().unwrap().to_str().unwrap());
-        let mut stats = LangStats::new();
-        stats.add(file.to_str().unwrap(), &lang);
-        SourceFile {
-            path: file.as_path().to_str().unwrap().to_string(),
+    pub fn new(file: &PathBuf) -> Option<Self> {
+        let file_name = file.file_name().unwrap().to_str().unwrap();
+        let file_path = file.to_str().unwrap();
+        let lang = Language::new(file_name)?;
+        let stats = FileStats::new(file_path, &lang);
+        let is_test = file_path.contains("test");
+        Some(SourceFile {
+            file_name: file_name.to_string(),
             lang,
-            stats
-        }
+            code_stats: if is_test { None } else { Some(stats) },
+            test_stats: if !is_test { None } else { Some(stats) },
+        })
     }
 }
 
@@ -70,7 +84,9 @@ impl HasStats for CountContext {
 impl HasStats for SourceFile {
     fn stats(&self) -> HashMap<Language, LangStats> {
         let mut map = HashMap::new();
-        map.insert(self.lang.clone(), self.stats.clone());
+        let mut stats = LangStats::new();
+        stats.add(&self);
+        map.insert(self.lang.clone(), stats);
         map
     }
 }

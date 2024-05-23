@@ -1,6 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
+use peak_alloc::PeakAlloc;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::iter::ParallelIterator;
 use crate::counter::{CountContext, HasStats};
@@ -8,6 +9,10 @@ use crate::counter::{CountContext, HasStats};
 mod counter;
 mod language;
 mod lang_stats;
+mod file_stats;
+
+#[global_allocator]
+static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
 //const ANDROID_SOURCE: &str = "/home/derdilla/android-source/aosp14/";
 const ANDROID_SOURCE: &str = "/home/derdilla/Coding/Java";
@@ -25,11 +30,21 @@ fn main() {
      */
     let start = SystemTime::now();
 
-    let context = CountContext::new();
+    let context = CountContext::new(ANDROID_SOURCE.to_string());
     let context = scan_dir(ANDROID_SOURCE, context);
-    println!("{:#?}", context);
-    println!("Analyzing {ANDROID_SOURCE} took: {}s", SystemTime::now().duration_since(start).unwrap().as_secs())
-    // Multithreading is faster: 20s -> 3s
+    //println!("{:#?}", context);
+    println!("Analyzing {ANDROID_SOURCE} took: {}ms", SystemTime::now().duration_since(start).unwrap().as_millis());
+    // 511ms -> 941ms -> 524ms
+
+    let peak_mem = PEAK_ALLOC.peak_usage_as_gb();
+    println!("The max amount that was used {}GB", peak_mem);
+    // 0.39365256GB -> 0.34015447GB -> 0.3339298GB -> 0.34041083GB -> 0.30123457GB
+    println!("The currently used amount is {}GB", PEAK_ALLOC.current_usage_as_gb());
+    // 0.01678145GB -> 0.016183667GB -> 0.022987688GB -> 0.02162337GB
+
+    let start = SystemTime::now();
+    context.stats();
+    println!("Building stats took: {}s", SystemTime::now().duration_since(start).unwrap().as_secs());
 }
 
 fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
@@ -45,16 +60,21 @@ fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
             || path.ends_with("out"))
         )
         .map(|entry: &PathBuf| {
-            if entry.is_dir() {
-                scan_dir(entry, CountContext::new())
+            if entry.is_dir() && entry.read_dir().unwrap().next().is_some() {
+                scan_dir(entry, CountContext::new(entry.file_name().unwrap().to_str().unwrap().to_string()))
             } else if entry.is_file() {
-                let mut context = CountContext::new();
-                context.insert_file(&entry);
+                let mut context = CountContext::new(entry.file_name().unwrap().to_str().unwrap().to_string());
+                if !["jar", "so", "obj", "webp", "class", "jpeg", "exe", "webm",
+                    "mp4", "apk", "apex", "ko", "lz4", "gz", "debug", "cr2",
+                ].iter().any(|ext| entry.ends_with(ext)) {
+                    context.insert_file(&entry);
+                }
                 context
             } else {
-                CountContext::new()
+                CountContext::new(String::new())
             }
         })
+        .filter(|e| !e.is_empty())
         .collect::<Vec<CountContext>>();
     for e in data {
         context.insert_context(e);

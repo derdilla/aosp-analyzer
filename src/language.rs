@@ -19,25 +19,27 @@ pub enum Language {
 
 impl Language {
     /// Finds the language matching to the extension in the [file_name].
-    pub fn new(file_name: &str) -> Language {
+    pub fn new(file_name: &str) -> Option<Language> {
         let extension = file_name
             .split(".")
             .last()
             .expect("split always has last");
         // No lower case possible because c and cpp
         match extension {
-            "java" => Language::JAVA,
-            "kt" => Language::KOTLIN,
-            "c" | "h" => Language::C,
+            "java" => Some(Language::JAVA),
+            "kt" => Some(Language::KOTLIN),
+            "c" | "h" => Some(Language::C),
             "cpp" | "CPP" | "cc" | "c++" | "cxx" | "CXX" | "hpp"
-                | "hxx" | "Hxx" | "HXX" | "C" | "H" => Language::CPP,
-            "rs" => Language::RUST,
-            "py" | "py3" | "pxd" | "pyi" | "pyz" | "pywz" | "ipynb" => Language::PYTHON,
-            "gradle" => Language::GRADLE,
-            "cmake" => Language::CMAKE,
-            "mk" | "MK" | "makefile" | "MAKEFILE" => Language::MAKEFILE,
-            "s" | "S" | "asm" => Language::ASSEMBLY,
-            _ => OTHER(extension.to_string())
+                | "hxx" | "Hxx" | "HXX" | "C" | "H" => Some(Language::CPP),
+            "rs" => Some(Language::RUST),
+            "py" | "py3" | "pxd" | "pyi" | "pyz" | "pywz" | "ipynb" => Some(Language::PYTHON),
+            "gradle" => Some(Language::GRADLE),
+            "cmake" => Some(Language::CMAKE),
+            "mk" | "MK" | "makefile" | "MAKEFILE" => Some(Language::MAKEFILE),
+            "s" | "S" | "asm" => Some(Language::ASSEMBLY),
+            "jar" | "so" | "obj" | "webp" | "class" | "jpeg" | "exe" | "webm" |
+            "mp4" | "apk" | "apex" | "ko" | "lz4"| "gz"| "debug"| "cr2" => None,
+            _ => Some(OTHER(extension.to_string()))
         }
     }
 }
