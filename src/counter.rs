@@ -1,23 +1,26 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
+use serde::{Serialize, Serializer};
+use serde::ser::SerializeStruct;
 use crate::file_stats::FileStats;
 use crate::lang_stats::LangStats;
 use crate::language::Language;
 
 /// Code stats of a directory.
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct CountContext {
     pub dir_name: String,
-    /// Contained files and directories.
-    pub children: Vec<Box<dyn HasStats>>,
+    pub files: Vec<SourceFile>,
+    pub dirs: Vec<CountContext>,
 }
 
 impl CountContext {
     pub fn new(dir_name: String) -> Self {
         CountContext {
             dir_name,
-            children: vec![],
+            files: vec![],
+            dirs: vec![],
         }
     }
 
@@ -25,32 +28,36 @@ impl CountContext {
     pub fn insert_file(&mut self, file: &PathBuf) {
         let file = SourceFile::new(file);
         if let Some(file) = file {
-            self.children.push(Box::new(file));
+            self.files.push(file);
         }
 
     }
 
     pub fn insert_context(&mut self, dir: Self) {
-        if dir.children.len() == 1 {
-            if let Some(mut file) = dir.children.first().unwrap().file() {
-                if dir.dir_name != file.file_name {
-                    file.file_name = dir.dir_name + "/" + file.file_name.as_str();
-                }
-                self.children.push(Box::new(file));
-            } else {
-                self.children.push(Box::new(dir));
-            }
-        } else {
-            self.children.push(Box::new(dir));
-        }
+        // TODO: is optimization to remove dirs with only one entry from tree beneficial ("foo"/"bar" -> "foo/bar") ?
+
+        self.dirs.push(dir);
     }
 
     pub fn is_empty(&self) -> bool {
-        self.children.is_empty()
+        self.dirs.is_empty() && self.files.is_empty()
     }
+
+    /*pub fn children(&self) -> Vec<Box<dyn HasStats>> {
+        let files_it = self.files
+            .iter()
+            .map(|file| file.box_into())
+            .into_iter();
+
+        self.dirs
+            .iter()
+            .map(|dir| dir.box_into())
+            .chain(files_it)
+            .collect()
+    }*/
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct SourceFile {
     file_name: String,
     pub lang: Language,
@@ -77,16 +84,21 @@ impl SourceFile {
 pub trait HasStats: Debug + Send {
     fn stats(&self) -> HashMap<Language, LangStats>;
 
-    fn file(&self) -> Option<SourceFile>;
-
-    fn context<'a>(&'a self) -> Option<&'a CountContext>;
     fn name(&self) -> String;
+
+    fn box_into(self) -> Box<dyn HasStats>;
+}
+
+#[derive(Serialize)]
+enum StatEntry {
+    DIR(CountContext),
+    FILE(SourceFile)
 }
 
 impl HasStats for CountContext {
     fn stats(&self) -> HashMap<Language, LangStats> {
         let mut all_stats = HashMap::new();
-        for file in &self.children {
+        for file in &self.files {
             for (lang, file_stat) in file.stats() {
                 let entry = all_stats.entry(lang).or_insert(LangStats::new());
                 entry.join(&file_stat);
@@ -96,16 +108,12 @@ impl HasStats for CountContext {
         all_stats
     }
 
-    fn file(&self) -> Option<SourceFile> {
-        None
-    }
-
-    fn context<'a>(&'a self) -> Option<&'a CountContext> {
-        Some(self)
-    }
-
     fn name(&self) -> String {
         self.dir_name.to_string()
+    }
+
+    fn box_into(self) -> Box<dyn HasStats> {
+        Box::new(self)
     }
 }
 
@@ -118,15 +126,11 @@ impl HasStats for SourceFile {
         map
     }
 
-    fn file(&self) -> Option<SourceFile> {
-        Some(self.clone())
-    }
-
-    fn context<'a>(&'a self) -> Option<&'a CountContext> {
-        None
-    }
-
     fn name(&self) -> String {
         self.file_name.to_string()
+    }
+
+    fn box_into(self) -> Box<dyn HasStats> {
+        Box::new(self)
     }
 }

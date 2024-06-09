@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
-use std::ops::Add;
+use std::fs::File;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 use peak_alloc::PeakAlloc;
@@ -14,6 +15,7 @@ mod language;
 mod lang_stats;
 mod file_stats;
 
+#[cfg(debug_assertions)]
 #[global_allocator]
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
@@ -39,24 +41,28 @@ fn main() {
     println!("Analyzing {ANDROID_SOURCE} took: {}ms", SystemTime::now().duration_since(start).unwrap().as_millis());
     // 511ms -> 941ms -> 524ms -> 509ms -> 477ms
 
-    let peak_mem = PEAK_ALLOC.peak_usage_as_gb();
-    println!("The max amount that was used {}GB", peak_mem);
-    // 0.39365256GB -> 0.34015447GB -> 0.3339298GB -> 0.34041083GB -> 0.30123457GB
-    // -> 0.33434874GB
-    println!("The currently used amount is {}GB", PEAK_ALLOC.current_usage_as_gb());
-    // 0.01678145GB -> 0.016183667GB -> 0.022987688GB -> 0.02162337GB -> 0.014041128GB
-    // -> 0.010378797GB
+    if let Ok(mut file) = File::create("analysis_context.txt") {
+        file.write_all(serde_json::to_string(&context).unwrap().as_bytes()).unwrap()
+    }
 
-    let start = SystemTime::now();
-    context.stats();
-    println!("Building stats took: {}ms", SystemTime::now()
-        .duration_since(start).unwrap()
-        .as_millis());
+    let stats = context.stats();
+    if let Ok(mut file) = File::create("analysis_stats.txt") {
+        file.write_all(serde_json::to_string(&stats).unwrap().as_bytes()).unwrap()
+    }
 
-    //println!("{}", print_hierarchy(&context, 0));
-    let mut map = HashMap::<Language, u32>::new();
-    count_extensions(&context, &mut map);
-    // println!("Files: {:#?}", map);
+    #[cfg(debug_assertions)]
+    println!("{}", print_hierarchy(&context, 0));
+
+    if cfg!(debug_assertions) {
+        let mut map = HashMap::<Language, u32>::new();
+        count_extensions(&context, &mut map);
+        println!("Files: {:#?}", map);
+    }
+
+    if cfg!(debug_assertions) {
+        println!("The max amount that was used {}GB", PEAK_ALLOC.peak_usage_as_gb());
+        println!("The currently used amount is {}GB", PEAK_ALLOC.current_usage_as_gb());
+    }
 }
 
 fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
@@ -96,25 +102,43 @@ fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
 
 fn print_hierarchy(context: &CountContext, level: usize) -> String {
     let mut str = context.name() + "\n";
-    for e in &context.children {
-        if let Some(context) = e.context() {
-            str += (" ".repeat(level) + "├ " + print_hierarchy(context, level + 1).as_str()).as_str();
-        } else {
-            str += (" ".repeat(level) + "├ " + e.name().as_str() + "\n").as_str();
+    {
+        let mut dirs_iter = context.dirs.iter().peekable();
+        while dirs_iter.peek().is_some() {
+            let val = print_hierarchy(&dirs_iter.next().unwrap(), level + 1);
+            if dirs_iter.peek().is_some()
+                || !context.files.is_empty() {
+                str += ("│".repeat(level) + "├ " + val.as_str()).as_str();
+            } else {
+                str += ("│".repeat(level) + "└ " + val.as_str()).as_str();
+            }
+
         }
     }
-    str
+
+    {
+        let mut file_iter = context.files.iter().peekable();
+        while file_iter.peek().is_some() {
+            let val = &file_iter.next().unwrap().name();
+            if file_iter.peek().is_some() {
+                str += ("│".repeat(level) + "├ " + val.as_str() + "\n").as_str();
+            } else {
+                str += ("│".repeat(level) + "└ " + val.as_str() + "\n").as_str();
+            }
+
+        }
+    }
+    str // TODO: test
 }
 
 /// HashMap::<Language, u32>::new()
 fn count_extensions(context: &CountContext, map: &mut HashMap::<Language, u32>) {
-    for e in &context.children {
-        if let Some(context) = e.context() {
-            count_extensions(context, map);
-        } else if let Some(file) = e.file() {
-            let mut entry = map.entry(file.lang).or_insert(0);
-            *entry += 1;
-        }
+    for dir in &context.dirs {
+        count_extensions(dir, map);
+    }
+    for file in &context.files {
+        let mut entry = map.entry(file.lang.clone()).or_insert(0);
+        *entry += 1;
     }
 }
 

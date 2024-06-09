@@ -1,7 +1,8 @@
+use serde::Serialize;
 use crate::language::Language::OTHER;
 
 /// Common supported programming languages indicated by file extensions.
-#[derive(Eq, Hash, PartialEq, Clone, Debug)]
+#[derive(Eq, Hash, PartialEq, Clone, Debug, Serialize)]
 pub enum Language {
     JAVA,
     KOTLIN,

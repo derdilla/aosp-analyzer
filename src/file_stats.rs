@@ -1,10 +1,11 @@
 use std::fs;
 use once_cell::sync::Lazy;
 use regex::Regex;
+use serde::Serialize;
 use crate::language::Language;
 use crate::language::Language::OTHER;
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Debug, Copy, Serialize)]
 pub struct FileStats {
     pub code_lines: u16,
     pub empty_lines: u16,
