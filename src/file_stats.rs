@@ -7,9 +7,9 @@ use crate::language::Language::OTHER;
 
 #[derive(Clone, Debug, Copy, Serialize)]
 pub struct FileStats {
-    pub code_lines: u16,
-    pub empty_lines: u16,
-    pub comment_lines: u16,
+    pub code_lines: u32,
+    pub empty_lines: u32,
+    pub comment_lines: u32,
 }
 
 impl FileStats {
@@ -49,11 +49,12 @@ impl FileStats {
         self.util_add_lines(lines);
     }
 
+    /// Add optional line counts in the order: all_lines, comment_lines and empty_lines.
     fn util_add_lines(&mut self, lines: Option<(usize, usize, usize)>) {
         if let Some(lines) = lines {
-            self.code_lines += (lines.0 - (lines.1 + lines.2)) as u16;
-            self.comment_lines += lines.1 as u16;
-            self.empty_lines += lines.2 as u16;
+            self.code_lines += (lines.0 - (lines.1 + lines.2)) as u32;
+            self.comment_lines += lines.1 as u32;
+            self.empty_lines += lines.2 as u32;
         }
     }
 }
@@ -76,6 +77,7 @@ enum CommentStyle {
 /// "/*" -> "*/"
 fn count_differentiated_lines(file: &str, comments: CommentStyle) -> Option<(usize, usize, usize)> {
     static EMPTY_LINES_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n[\s\t\r]*\n").unwrap());
+    static NON_EMPTY_CHARACTERS_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"[^\s\t\r]").unwrap());
     static BASH_COMMENT_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n\s*#.*\n").unwrap());
     static C_COMMENT_SINGLE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\n\s*//.*\n").unwrap());
     static C_COMMENT_MULTI_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"/\*(?:.|\n)*?\*/").unwrap());
@@ -91,12 +93,22 @@ fn count_differentiated_lines(file: &str, comments: CommentStyle) -> Option<(usi
         CommentStyle::C => {
             let multi_comments: usize = C_COMMENT_MULTI_RE
                 .find_iter(&content)
+                // Avoid double counting empty lines in comments (like commented
+                // out code) as empty lines in comments serve no purpose.
+                .filter(|m| !NON_EMPTY_CHARACTERS_RE.is_match(m.as_str()))
                 .map(|m| m.as_str().matches('\n').count())
                 .sum();
-            C_COMMENT_SINGLE_RE.find_iter(&content).count() + multi_comments
+            let single_comments = C_COMMENT_SINGLE_RE.find_iter(&content).count();
+            single_comments + multi_comments
         },
         CommentStyle::UNKNOWN => 0,
     };
 
-    Some((total_lines, comment_lines, empty_lines))
+    if total_lines < (comment_lines + empty_lines) {
+        eprintln!("Counting error in {file}. Found {total_lines} lines in total, but {comment_lines} comment lines and {empty_lines} empty lines.");
+        None
+    } else {
+        Some((total_lines, comment_lines, empty_lines))
+    }
+
 }
