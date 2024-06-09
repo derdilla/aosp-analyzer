@@ -1,13 +1,8 @@
-use std::{fs};
-use once_cell::sync::Lazy;
-use regex::Regex;
+use serde::Serialize;
 use crate::counter::SourceFile;
-use crate::file_stats::FileStats;
-use crate::language::Language;
-use crate::language::Language::OTHER;
 
 /// Detailed statistics on source code.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct LangStats {
     // Total counts are maintained to be able to verify data consistency.
     total_files: u16,

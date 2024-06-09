@@ -1,48 +1,38 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
+use serde::{Serialize};
 use crate::file_stats::FileStats;
 use crate::lang_stats::LangStats;
 use crate::language::Language;
 
 /// Code stats of a directory.
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CountContext {
-    dir_name: String,
-    /// Contained files and directories.
-    children: Vec<Box<dyn HasStats>>,
+    pub dir_name: String,
+    pub files: Vec<SourceFile>,
+    pub dirs: Vec<CountContext>,
 }
 
 impl CountContext {
     pub fn new(dir_name: String) -> Self {
         CountContext {
             dir_name,
-            children: vec![],
+            files: vec![],
+            dirs: vec![],
         }
-    }
-
-    /// Add stats of a non-ignored file
-    pub fn insert_file(&mut self, file: &PathBuf) {
-        let file = SourceFile::new(file);
-        if let Some(file) = file {
-            self.children.push(Box::new(file));
-        }
-
     }
 
     pub fn insert_context(&mut self, dir: Self) {
-        self.children.push(Box::new(dir));
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.children.is_empty()
+        // TODO: is optimization to remove dirs with only one entry from tree beneficial ("foo"/"bar" -> "foo/bar") ?
+        self.dirs.push(dir);
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct SourceFile {
     file_name: String,
-    lang: Language,
+    pub lang: Language,
     pub code_stats: Option<FileStats>,
     pub test_stats: Option<FileStats>,
 }
@@ -65,12 +55,14 @@ impl SourceFile {
 
 pub trait HasStats: Debug + Send {
     fn stats(&self) -> HashMap<Language, LangStats>;
+
+    fn name(&self) -> String;
 }
 
 impl HasStats for CountContext {
     fn stats(&self) -> HashMap<Language, LangStats> {
         let mut all_stats = HashMap::new();
-        for file in &self.children {
+        for file in &self.files {
             for (lang, file_stat) in file.stats() {
                 let entry = all_stats.entry(lang).or_insert(LangStats::new());
                 entry.join(&file_stat);
@@ -78,6 +70,10 @@ impl HasStats for CountContext {
         }
 
         all_stats
+    }
+
+    fn name(&self) -> String {
+        self.dir_name.to_string()
     }
 }
 
@@ -88,5 +84,9 @@ impl HasStats for SourceFile {
         stats.add(&self);
         map.insert(self.lang.clone(), stats);
         map
+    }
+
+    fn name(&self) -> String {
+        self.file_name.to_string()
     }
 }

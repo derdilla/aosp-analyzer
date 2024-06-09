@@ -1,7 +1,10 @@
+use std::fmt;
+use std::fmt::Display;
+use serde::Serialize;
 use crate::language::Language::OTHER;
 
 /// Common supported programming languages indicated by file extensions.
-#[derive(Eq, Hash, PartialEq, Clone, Debug)]
+#[derive(Eq, Hash, PartialEq, Clone, Debug, Serialize)]
 pub enum Language {
     JAVA,
     KOTLIN,
@@ -25,6 +28,9 @@ impl Language {
             .last()
             .expect("split always has last");
         // No lower case possible because c and cpp
+        if extension.len() > 15 {
+            return None;
+        }
         match extension {
             "java" => Some(Language::JAVA),
             "kt" => Some(Language::KOTLIN),
@@ -38,9 +44,17 @@ impl Language {
             "mk" | "MK" | "makefile" | "MAKEFILE" => Some(Language::MAKEFILE),
             "s" | "S" | "asm" => Some(Language::ASSEMBLY),
             "jar" | "so" | "obj" | "webp" | "class" | "jpeg" | "exe" | "webm" |
+            "db" | "original" | "iml" | "dex" | "sha1" | "ttf" | "aab" |
             "mp4" | "apk" | "apex" | "ko" | "lz4"| "gz"| "debug"| "cr2" => None,
+
             _ => Some(OTHER(extension.to_string()))
         }
+    }
+}
+
+impl Display for Language {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
