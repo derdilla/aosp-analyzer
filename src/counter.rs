@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
-use serde::{Serialize, Serializer};
+use serde::{Serialize};
 use serde::ser::SerializeStruct;
 use crate::file_stats::FileStats;
 use crate::lang_stats::LangStats;
 use crate::language::Language;
 
 /// Code stats of a directory.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CountContext {
     pub dir_name: String,
     pub files: Vec<SourceFile>,
@@ -30,12 +30,10 @@ impl CountContext {
         if let Some(file) = file {
             self.files.push(file);
         }
-
     }
 
     pub fn insert_context(&mut self, dir: Self) {
         // TODO: is optimization to remove dirs with only one entry from tree beneficial ("foo"/"bar" -> "foo/bar") ?
-
         self.dirs.push(dir);
     }
 

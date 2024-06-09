@@ -1,14 +1,13 @@
 use std::collections::HashMap;
-use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
-use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::io::{Write};
+use std::path::{PathBuf};
 use std::time::SystemTime;
 use peak_alloc::PeakAlloc;
 use rayon::prelude::IntoParallelRefIterator;
-use rayon::iter::ParallelIterator;
-use crate::counter::{CountContext, HasStats};
+use rayon::iter::{Either, ParallelIterator};
+use crate::counter::{CountContext, HasStats, SourceFile};
 use crate::language::Language;
 
 mod counter;
@@ -36,8 +35,7 @@ fn main() {
      */
     let start = SystemTime::now();
 
-    let mut context = CountContext::new(ANDROID_SOURCE.to_string());
-    scan_dir(ANDROID_SOURCE, &mut context);
+    let context = scan_dir(PathBuf::from(ANDROID_SOURCE));
     //println!("{:#?}", context);
     println!("Analyzing {ANDROID_SOURCE} took: {}ms", SystemTime::now().duration_since(start).unwrap().as_millis());
     // 511ms -> 941ms -> 524ms -> 509ms -> 477ms
@@ -63,40 +61,131 @@ fn main() {
     }
 
     if cfg!(debug_assertions) {
-        println!("The max amount that was used {}GB", PEAK_ALLOC.peak_usage_as_gb());
-        println!("The currently used amount is {}GB", PEAK_ALLOC.current_usage_as_gb());
+        println!("The max amount of memory that was used {}GB", PEAK_ALLOC.peak_usage_as_gb());
+        println!("The currently used amount of memory is {}GB", PEAK_ALLOC.current_usage_as_gb());
     }
 }
 
-fn scan_dir<P: AsRef<Path>>(dir: P, mut context: &mut CountContext) {
-    // TODO: parallelize
-    let entry_list: Vec<PathBuf> = fs::read_dir(dir)
+fn scan_dir(dir: PathBuf) -> CountContext {
+    let dir_name = dir.file_name().unwrap().to_str().unwrap().to_string();
+    let entry_list: Vec<PathBuf> = fs::read_dir(&dir)
         .unwrap()
         .map(|e| e.unwrap().path())
         .collect::<Vec<PathBuf>>();
-    let entry_list = entry_list
-        .into_iter()
-        .filter(|path| !(path.ends_with(".repo")
-            || path.ends_with(".git")
-            || path.ends_with("prebuilt")
-            || path.ends_with("prebuilts")
-            || path.ends_with("out"))
-            && (
-                path.is_dir()
-                    || path.is_file() && !["jar", "so", "obj", "webp", "class", "jpeg", "exe", "webm",
-                    "mp4", "apk", "apex", "ko", "lz4", "gz", "debug", "cr2",
-                ].iter().any(|ext| path.ends_with(ext))
-            )
-        );
-    for entry in entry_list {
-        if entry.is_dir() && entry.read_dir().unwrap().next().is_some() {
-            let mut dir_context = CountContext::new(entry.file_name().unwrap().to_str().unwrap().to_string());
-            scan_dir(entry, &mut dir_context);
-            context.insert_context(dir_context);
-        } else if entry.is_file() {
-                context.insert_file(&entry);
-        }
-    }
+    let context = entry_list
+        .par_iter()
+        .filter(|path| {
+            if path.ends_with(".repo")
+                || path.ends_with(".git")
+                || path.ends_with("prebuilt")
+                || path.ends_with("prebuilts")
+                || path.ends_with("out") {
+                return false;
+            }
+            if path.is_file()
+                && ["jar", "so", "obj", "webp", "class", "jpeg", "exe", "webm",
+                "mp4", "apk", "apex", "ko", "lz4", "gz", "debug", "cr2",
+            ].iter().any(|ext| path.ends_with(ext)) {
+                return false;
+            }
+            return true;
+        })
+        .map(|path| {
+            if path.is_dir() && path.read_dir().unwrap().next().is_some() {
+                Either::Left(scan_dir(path.clone()))
+            } else if path.is_file() {
+                Either::Right(SourceFile::new(path))
+            } else {
+                Either::Left(CountContext::new(String::new()))
+            }
+        })
+        .reduce(|| {
+            Either::Left(CountContext::new(dir_name.clone()))
+        }, |a,b| {
+            let b = &b;
+            let context = a.either(|context_a| {
+                // The left and the right value can all be either file in the
+                // root context, dir in the root context or a subset of the root
+                // context that needs further merging. In any case this function
+                // should return the root context.
+                let context_a = &context_a;
+                b.clone().either(
+                    |context_b| {
+                        // Unify two contexts
+                        if context_a.dir_name == dir_name
+                            && context_b.dir_name == dir_name {
+                            let mut context_a = context_a.clone();
+                            context_a.files.extend(context_b.files);
+                            context_a.dirs.extend(context_b.dirs);
+                            context_a
+                        } else if context_a.dir_name == dir_name {
+                            let mut context = context_a.clone();
+                            context.insert_context(context_b);
+                            context
+                        } else if context_b.dir_name == dir_name {
+                            let mut context = context_b.clone();
+                            context.insert_context(context_a.clone());
+                            context
+                        } else {
+                            let mut context = CountContext::new(dir_name.clone());
+                            context.insert_context(context_a.clone());
+                            context.insert_context(context_b);
+                            context
+                        }
+                    }, |file_b| {
+                        let mut context_a = context_a.clone();
+                        if context_a.dir_name == dir_name {
+                            if let Some(file_b) = file_b {
+                                context_a.files.push(file_b);
+                            }
+                            context_a
+                        } else {
+                            let mut context = CountContext::new(dir_name.clone());
+                            context.insert_context(context_a);
+                            if let Some(file_b) = file_b {
+                                context.files.push(file_b);
+                            }
+                            context
+                        }
+                    }
+                )
+            }, |file_a| {
+                let file_a = &file_a;
+                b.clone().either(
+                    |mut context_b| {
+                        let file_a = file_a.clone();
+                        // TODO: dedupe with context_a and file_b
+                        if context_b.dir_name == dir_name {
+                            if let Some(file_a) = file_a {
+                                context_b.files.push(file_a);
+                            }
+                            context_b
+                        } else {
+                            let mut context = CountContext::new(dir_name.clone());
+                            context.insert_context(context_b);
+                            if let Some(file_a) = file_a {
+                                context.files.push(file_a);
+                            }
+                            context
+                        }
+                    }, |file_b| {
+                        // Add 2 files to new context
+                        let file_a = file_a.clone();
+                        let mut context = CountContext::new(dir_name.clone());
+                        if let Some(file_a) = file_a {
+                            context.files.push(file_a);
+                        }
+                        if let Some(file_b) = file_b {
+                            context.files.push(file_b);
+                        }
+                        context
+                    }
+                )
+            });
+            Either::Left(context)
+        });
+
+    context.left().unwrap().clone()
 }
 
 fn print_hierarchy(context: &CountContext, level: usize) -> String {
@@ -136,7 +225,7 @@ fn count_extensions(context: &CountContext, map: &mut HashMap::<Language, u32>) 
         count_extensions(dir, map);
     }
     for file in &context.files {
-        let mut entry = map.entry(file.lang.clone()).or_insert(0);
+        let entry = map.entry(file.lang.clone()).or_insert(0);
         *entry += 1;
     }
 }
