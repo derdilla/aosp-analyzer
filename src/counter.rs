@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::path::PathBuf;
 use serde::{Serialize};
-use serde::ser::SerializeStruct;
 use crate::file_stats::FileStats;
 use crate::lang_stats::LangStats;
 use crate::language::Language;
@@ -24,35 +23,10 @@ impl CountContext {
         }
     }
 
-    /// Add stats of a non-ignored file
-    pub fn insert_file(&mut self, file: &PathBuf) {
-        let file = SourceFile::new(file);
-        if let Some(file) = file {
-            self.files.push(file);
-        }
-    }
-
     pub fn insert_context(&mut self, dir: Self) {
         // TODO: is optimization to remove dirs with only one entry from tree beneficial ("foo"/"bar" -> "foo/bar") ?
         self.dirs.push(dir);
     }
-
-    pub fn is_empty(&self) -> bool {
-        self.dirs.is_empty() && self.files.is_empty()
-    }
-
-    /*pub fn children(&self) -> Vec<Box<dyn HasStats>> {
-        let files_it = self.files
-            .iter()
-            .map(|file| file.box_into())
-            .into_iter();
-
-        self.dirs
-            .iter()
-            .map(|dir| dir.box_into())
-            .chain(files_it)
-            .collect()
-    }*/
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -83,14 +57,6 @@ pub trait HasStats: Debug + Send {
     fn stats(&self) -> HashMap<Language, LangStats>;
 
     fn name(&self) -> String;
-
-    fn box_into(self) -> Box<dyn HasStats>;
-}
-
-#[derive(Serialize)]
-enum StatEntry {
-    DIR(CountContext),
-    FILE(SourceFile)
 }
 
 impl HasStats for CountContext {
@@ -109,10 +75,6 @@ impl HasStats for CountContext {
     fn name(&self) -> String {
         self.dir_name.to_string()
     }
-
-    fn box_into(self) -> Box<dyn HasStats> {
-        Box::new(self)
-    }
 }
 
 impl HasStats for SourceFile {
@@ -126,9 +88,5 @@ impl HasStats for SourceFile {
 
     fn name(&self) -> String {
         self.file_name.to_string()
-    }
-
-    fn box_into(self) -> Box<dyn HasStats> {
-        Box::new(self)
     }
 }

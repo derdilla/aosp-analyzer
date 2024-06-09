@@ -1,11 +1,5 @@
-use std::{fs};
-use once_cell::sync::Lazy;
-use regex::Regex;
 use serde::Serialize;
 use crate::counter::SourceFile;
-use crate::file_stats::FileStats;
-use crate::language::Language;
-use crate::language::Language::OTHER;
 
 /// Detailed statistics on source code.
 #[derive(Clone, Debug, Serialize)]
