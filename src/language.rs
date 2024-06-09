@@ -1,3 +1,5 @@
+use std::fmt;
+use std::fmt::Display;
 use serde::Serialize;
 use crate::language::Language::OTHER;
 
@@ -47,6 +49,12 @@ impl Language {
 
             _ => Some(OTHER(extension.to_string()))
         }
+    }
+}
+
+impl Display for Language {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

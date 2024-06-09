@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -35,8 +36,8 @@ fn main() {
      */
     let start = SystemTime::now();
 
-    let context = CountContext::new(ANDROID_SOURCE.to_string());
-    let context = scan_dir(ANDROID_SOURCE, context);
+    let mut context = CountContext::new(ANDROID_SOURCE.to_string());
+    scan_dir(ANDROID_SOURCE, &mut context);
     //println!("{:#?}", context);
     println!("Analyzing {ANDROID_SOURCE} took: {}ms", SystemTime::now().duration_since(start).unwrap().as_millis());
     // 511ms -> 941ms -> 524ms -> 509ms -> 477ms
@@ -45,10 +46,12 @@ fn main() {
         file.write_all(serde_json::to_string(&context).unwrap().as_bytes()).unwrap()
     }
 
+    /* fixme
     let stats = context.stats();
     if let Ok(mut file) = File::create("analysis_stats.txt") {
         file.write_all(serde_json::to_string(&stats).unwrap().as_bytes()).unwrap()
     }
+    */
 
     #[cfg(debug_assertions)]
     println!("{}", print_hierarchy(&context, 0));
@@ -65,39 +68,35 @@ fn main() {
     }
 }
 
-fn scan_dir<P: AsRef<Path>>(dir: P, mut context: CountContext) -> CountContext {
-    let data = fs::read_dir(dir)
+fn scan_dir<P: AsRef<Path>>(dir: P, mut context: &mut CountContext) {
+    // TODO: parallelize
+    let entry_list: Vec<PathBuf> = fs::read_dir(dir)
         .unwrap()
         .map(|e| e.unwrap().path())
-        .collect::<Vec<PathBuf>>()
-        .par_iter()
+        .collect::<Vec<PathBuf>>();
+    let entry_list = entry_list
+        .into_iter()
         .filter(|path| !(path.ends_with(".repo")
             || path.ends_with(".git")
             || path.ends_with("prebuilt")
             || path.ends_with("prebuilts")
             || path.ends_with("out"))
-        )
-        .map(|entry: &PathBuf| {
-            if entry.is_dir() && entry.read_dir().unwrap().next().is_some() {
-                scan_dir(entry, CountContext::new(entry.file_name().unwrap().to_str().unwrap().to_string()))
-            } else if entry.is_file() {
-                let mut context = CountContext::new(entry.file_name().unwrap().to_str().unwrap().to_string());
-                if !["jar", "so", "obj", "webp", "class", "jpeg", "exe", "webm",
+            && (
+                path.is_dir()
+                    || path.is_file() && !["jar", "so", "obj", "webp", "class", "jpeg", "exe", "webm",
                     "mp4", "apk", "apex", "ko", "lz4", "gz", "debug", "cr2",
-                ].iter().any(|ext| entry.ends_with(ext)) {
-                    context.insert_file(&entry);
-                }
-                context
-            } else {
-                CountContext::new(String::new())
-            }
-        })
-        .filter(|e| !e.is_empty())
-        .collect::<Vec<CountContext>>();
-    for e in data {
-        context.insert_context(e);
+                ].iter().any(|ext| path.ends_with(ext))
+            )
+        );
+    for entry in entry_list {
+        if entry.is_dir() && entry.read_dir().unwrap().next().is_some() {
+            let mut dir_context = CountContext::new(entry.file_name().unwrap().to_str().unwrap().to_string());
+            scan_dir(entry, &mut dir_context);
+            context.insert_context(dir_context);
+        } else if entry.is_file() {
+                context.insert_file(&entry);
+        }
     }
-    context
 }
 
 fn print_hierarchy(context: &CountContext, level: usize) -> String {
