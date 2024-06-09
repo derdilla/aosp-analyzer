@@ -19,8 +19,8 @@ mod file_stats;
 #[global_allocator]
 static PEAK_ALLOC: PeakAlloc = PeakAlloc;
 
-//const ANDROID_SOURCE: &str = "/home/derdilla/android-source/aosp14/";
-const ANDROID_SOURCE: &str = "/home/derdilla/Coding/Java";
+const ANDROID_SOURCE: &str = "/home/derdilla/android-source/aosp14/";
+//const ANDROID_SOURCE: &str = "/home/derdilla/Coding/Java";
 
 fn main() {
     /*
@@ -54,13 +54,15 @@ fn main() {
     #[cfg(debug_assertions)]
     println!("{}", print_hierarchy(&context, 0));
 
-    if cfg!(debug_assertions) {
+    #[cfg(debug_assertions)]
+    {
         let mut map = HashMap::<Language, u32>::new();
         count_extensions(&context, &mut map);
         println!("Files: {:#?}", map);
     }
 
-    if cfg!(debug_assertions) {
+    #[cfg(debug_assertions)]
+    {
         println!("The max amount of memory that was used {}GB", PEAK_ALLOC.peak_usage_as_gb());
         println!("The currently used amount of memory is {}GB", PEAK_ALLOC.current_usage_as_gb());
     }
@@ -68,7 +70,12 @@ fn main() {
 
 fn scan_dir(dir: PathBuf) -> CountContext {
     let dir_name = dir.file_name().unwrap().to_str().unwrap().to_string();
-    let entry_list: Vec<PathBuf> = fs::read_dir(&dir)
+    let entry_list = fs::read_dir(&dir);
+    if entry_list.is_err() {
+        eprintln!("Couldn't scan {}: {} - Skipping...", dir.display(), entry_list.err().unwrap());
+        return CountContext::new(dir_name)
+    }
+    let entry_list: Vec<PathBuf> = entry_list
         .unwrap()
         .map(|e| e.unwrap().path())
         .collect::<Vec<PathBuf>>();
@@ -88,14 +95,19 @@ fn scan_dir(dir: PathBuf) -> CountContext {
             ].iter().any(|ext| path.ends_with(ext)) {
                 return false;
             }
+            if path.is_symlink() {
+                return false;
+            }
             return true;
         })
         .map(|path| {
-            if path.is_dir() && path.read_dir().unwrap().next().is_some() {
+            // non empty dir
+            if path.is_dir() && path.read_dir().is_ok_and(|mut res| res.next().is_some()) {
                 Either::Left(scan_dir(path.clone()))
             } else if path.is_file() {
                 Either::Right(SourceFile::new(path))
             } else {
+                // TODO: remove these from the stack
                 Either::Left(CountContext::new(String::new()))
             }
         })
