@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::format};
 
-use crate::parser::*;
+use crate::extractor::*;
 
 const STYLE: &'static str = "<style>
 .tabs {
@@ -54,29 +54,28 @@ const STYLE: &'static str = "<style>
 }
 </style>";
 
-pub fn generate_html(data: &Data) -> String {
+pub fn generate_html(data: &ExtractedData) -> String {
     let overview = build_overview(&data);
     let details = build_details(data);
     let out = format!("<!DOCTYPE html><html><head>{STYLE}</head><body>{overview}{details}</body></html>");
     return out;
 }
 
-fn build_details(data: &Data) -> String {
+fn build_details(data: &ExtractedData) -> String {
     let mut out = String::from("<div class=\"tabs\">");
-    out += build_lang_detail("Core", &data.core).as_str();
-    out += build_lang_detail("Sdks", &data.sdks).as_str();
-    out += build_lang_detail("Thirdparty code", &data.thirdparty).as_str();
-    out += build_lang_detail("Devtools", &data.devtools).as_str();
-    out += build_lang_detail("Userspace", &data.userspace).as_str();
+    out += build_lang_detail(&data.core).as_str();
+    out += build_lang_detail(&data.sdks).as_str();
+    out += build_lang_detail(&data.thirdparty).as_str();
+    out += build_lang_detail(&data.devtools).as_str();
+    out += build_lang_detail(&data.userspace).as_str();
+    out += build_lang_detail(&data.tests).as_str();
     out += "</div>";
-    out
+    format!("<section><h2>Details</h2>{out}</section>")
 }
 
-fn build_lang_detail(title: &str, data: &HashMap<String, CodeStatistics>) -> String {
-    let mut data = data.iter()
-        //.map(|e| e.0.clone())
-        .collect::<Vec<(&String, &CodeStatistics)>>();
-    data.sort_by(|a, b| b.1.code.cmp(&a.1.code));
+fn build_lang_detail(data: &CodeCategory) -> String {
+    let mut details = data.details.clone();
+    details.sort_by(|(_, stats_a), (_, stats_b)| stats_b.code.cmp(&stats_a.code));
 
     let t_head = format!("<thead><tr>{}{}{}{}{}",
         "<th scope=\"col\"></th>",
@@ -84,12 +83,12 @@ fn build_lang_detail(title: &str, data: &HashMap<String, CodeStatistics>) -> Str
         "<th scope=\"col\">Comments</th>",
         "<th scope=\"col\">Blank</th>",
     "</tr></thead>");
-    let input = format!("<input type=\"radio\" id=\"tab-{}\" name=\"tab-group-1\">", &title);
-    let label = format!("<label for=\"tab-{}\">{}</label>", &title, &title);
+    let input = format!("<input type=\"radio\" id=\"tab-{}\" name=\"tab-group-1\">", &data.name);
+    let label = format!("<label for=\"tab-{}\">{}</label>", &data.name, &data.name);
 
     let mut out = String::new();
-    for (lang, v) in data {
-        out += format!("<tr><th scope=\"row\">{lang}</th><td>{}</td><td>{}</td><td>{}</td></tr>",  v.code, v.comments, v.blanks, ).as_str();
+    for (lang, v) in details {
+        out += format!("<tr><th scope=\"row\">{lang}</th><td>{}</td><td>{}</td><td>{}</td></tr>",  v.code, v.comment, v.blank, ).as_str();
     }
     let out = format!("<tbody>{out}</tbody>");
     let out = format!("<table>{t_head}{out}</table>");
@@ -97,31 +96,31 @@ fn build_lang_detail(title: &str, data: &HashMap<String, CodeStatistics>) -> Str
     let out = format!("<div class=\"tab\">{input}{label}{out}</div>");
     // FIXME: make like html below
 
-    format!("<section><h2>Details</h2>{out}</section>")
+    out
 }
 
-fn build_overview(data: &Data) -> String {
-    let total_code = data.core.get("Total").unwrap().code
-        + data.sdks.get("Total").unwrap().code
-        + data.thirdparty.get("Total").unwrap().code
-        + data.devtools.get("Total").unwrap().code
-        + data.userspace.get("Total").unwrap().code;
-    let total_comments = data.core.get("Total").unwrap().comments
-        + data.sdks.get("Total").unwrap().comments
-        + data.thirdparty.get("Total").unwrap().comments
-        + data.devtools.get("Total").unwrap().comments
-        + data.userspace.get("Total").unwrap().comments;
-    let total_blank = data.core.get("Total").unwrap().blanks
-        + data.sdks.get("Total").unwrap().blanks
-        + data.thirdparty.get("Total").unwrap().blanks
-        + data.devtools.get("Total").unwrap().blanks
-        + data.userspace.get("Total").unwrap().blanks;
+fn build_overview(data: &ExtractedData) -> String {
+    let total_code = data.core.total.code
+        + data.sdks.total.code
+        + data.thirdparty.total.code
+        + data.devtools.total.code
+        + data.userspace.total.code;
+    let total_comments = data.core.total.comment
+        + data.sdks.total.comment
+        + data.thirdparty.total.comment
+        + data.devtools.total.comment
+        + data.userspace.total.comment;
+    let total_blank = data.core.total.blank
+        + data.sdks.total.blank
+        + data.thirdparty.total.blank
+        + data.devtools.total.blank
+        + data.userspace.total.blank;
     let total = total_code + total_comments + total_blank;
 
-    let running = data.core.get("Total").unwrap().code
-        + data.sdks.get("Total").unwrap().code
-        + data.thirdparty.get("Total").unwrap().code
-        + data.userspace.get("Total").unwrap().code;
+    let running = data.core.total.code
+        + data.sdks.total.code
+        + data.thirdparty.total.code
+        + data.userspace.total.code;
 
     let msg_total = format!("There are over <b>{}</b> source code lines contributing to android.", build_number(total));
     let msg_running = format!("Roughly <b>{}</b> lines of code run on the average device.", build_number(running));
