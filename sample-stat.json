@@ -1,0 +1,398 @@
+{
+    "HTML": {
+        "blanks": 1,
+        "children": {
+            "Css": [
+                {
+                    "name": "./visualizer/tst.html",
+                    "stats": {
+                        "blanks": 0,
+                        "blobs": {},
+                        "code": 48,
+                        "comments": 1
+                    }
+                }
+            ],
+            "JavaScript": [
+                {
+                    "name": "./visualizer/sample.html",
+                    "stats": {
+                        "blanks": 4,
+                        "blobs": {},
+                        "code": 21,
+                        "comments": 1
+                    }
+                }
+            ]
+        },
+        "code": 15,
+        "comments": 0,
+        "inaccurate": false,
+        "reports": [
+            {
+                "name": "./visualizer/sample.html",
+                "stats": {
+                    "blanks": 1,
+                    "blobs": {
+                        "JavaScript": {
+                            "blanks": 4,
+                            "blobs": {},
+                            "code": 21,
+                            "comments": 1
+                        }
+                    },
+                    "code": 13,
+                    "comments": 0
+                }
+            },
+            {
+                "name": "./visualizer/tst.html",
+                "stats": {
+                    "blanks": 0,
+                    "blobs": {
+                        "Css": {
+                            "blanks": 0,
+                            "blobs": {},
+                            "code": 48,
+                            "comments": 1
+                        }
+                    },
+                    "code": 2,
+                    "comments": 0
+                }
+            }
+        ]
+    },
+    "JSON": {
+        "blanks": 0,
+        "children": {},
+        "code": 5,
+        "comments": 0,
+        "inaccurate": false,
+        "reports": [
+            {
+                "name": "./sample-stat.json",
+                "stats": {
+                    "blanks": 0,
+                    "blobs": {},
+                    "code": 0,
+                    "comments": 0
+                }
+            },
+            {
+                "name": "./stats.sample/sdks.json",
+                "stats": {
+                    "blanks": 0,
+                    "blobs": {},
+                    "code": 1,
+                    "comments": 0
+                }
+            },
+            {
+                "name": "./stats.sample/devtools.json",
+                "stats": {
+                    "blanks": 0,
+                    "blobs": {},
+                    "code": 1,
+                    "comments": 0
+                }
+            },
+            {
+                "name": "./stats.sample/userspace.json",
+                "stats": {
+                    "blanks": 0,
+                    "blobs": {},
+                    "code": 1,
+                    "comments": 0
+                }
+            },
+            {
+                "name": "./stats.sample/core.json",
+                "stats": {
+                    "blanks": 0,
+                    "blobs": {},
+                    "code": 1,
+                    "comments": 0
+                }
+            },
+            {
+                "name": "./stats.sample/thirdparty.json",
+                "stats": {
+                    "blanks": 0,
+                    "blobs": {},
+                    "code": 1,
+                    "comments": 0
+                }
+            }
+        ]
+    },
+    "Markdown": {
+        "blanks": 3,
+        "children": {},
+        "code": 0,
+        "comments": 7,
+        "inaccurate": false,
+        "reports": [
+            {
+                "name": "./README.md",
+                "stats": {
+                    "blanks": 3,
+                    "blobs": {},
+                    "code": 0,
+                    "comments": 7
+                }
+            }
+        ]
+    },
+    "Rust": {
+        "blanks": 22,
+        "children": {},
+        "code": 170,
+        "comments": 14,
+        "inaccurate": false,
+        "reports": [
+            {
+                "name": "./visualizer/src/main.rs",
+                "stats": {
+                    "blanks": 3,
+                    "blobs": {},
+                    "code": 10,
+                    "comments": 0
+                }
+            },
+            {
+                "name": "./visualizer/src/parser.rs",
+                "stats": {
+                    "blanks": 4,
+                    "blobs": {},
+                    "code": 31,
+                    "comments": 11
+                }
+            },
+            {
+                "name": "./visualizer/src/format.rs",
+                "stats": {
+                    "blanks": 15,
+                    "blobs": {},
+                    "code": 129,
+                    "comments": 3
+                }
+            }
+        ]
+    },
+    "Shell": {
+        "blanks": 3,
+        "children": {},
+        "code": 13,
+        "comments": 7,
+        "inaccurate": false,
+        "reports": [
+            {
+                "name": "./analyze.sh",
+                "stats": {
+                    "blanks": 2,
+                    "blobs": {},
+                    "code": 9,
+                    "comments": 6
+                }
+            },
+            {
+                "name": "./download.sh",
+                "stats": {
+                    "blanks": 1,
+                    "blobs": {},
+                    "code": 4,
+                    "comments": 1
+                }
+            }
+        ]
+    },
+    "TOML": {
+        "blanks": 2,
+        "children": {},
+        "code": 8,
+        "comments": 0,
+        "inaccurate": false,
+        "reports": [
+            {
+                "name": "./visualizer/Cargo.toml",
+                "stats": {
+                    "blanks": 2,
+                    "blobs": {},
+                    "code": 8,
+                    "comments": 0
+                }
+            }
+        ]
+    },
+    "Total": {
+        "blanks": 31,
+        "children": {
+            "Html": [
+                {
+                    "name": "./visualizer/sample.html",
+                    "stats": {
+                        "blanks": 1,
+                        "blobs": {
+                            "JavaScript": {
+                                "blanks": 4,
+                                "blobs": {},
+                                "code": 21,
+                                "comments": 1
+                            }
+                        },
+                        "code": 13,
+                        "comments": 0
+                    }
+                },
+                {
+                    "name": "./visualizer/tst.html",
+                    "stats": {
+                        "blanks": 0,
+                        "blobs": {
+                            "Css": {
+                                "blanks": 0,
+                                "blobs": {},
+                                "code": 48,
+                                "comments": 1
+                            }
+                        },
+                        "code": 2,
+                        "comments": 0
+                    }
+                }
+            ],
+            "Json": [
+                {
+                    "name": "./sample-stat.json",
+                    "stats": {
+                        "blanks": 0,
+                        "blobs": {},
+                        "code": 0,
+                        "comments": 0
+                    }
+                },
+                {
+                    "name": "./stats.sample/sdks.json",
+                    "stats": {
+                        "blanks": 0,
+                        "blobs": {},
+                        "code": 1,
+                        "comments": 0
+                    }
+                },
+                {
+                    "name": "./stats.sample/devtools.json",
+                    "stats": {
+                        "blanks": 0,
+                        "blobs": {},
+                        "code": 1,
+                        "comments": 0
+                    }
+                },
+                {
+                    "name": "./stats.sample/userspace.json",
+                    "stats": {
+                        "blanks": 0,
+                        "blobs": {},
+                        "code": 1,
+                        "comments": 0
+                    }
+                },
+                {
+                    "name": "./stats.sample/core.json",
+                    "stats": {
+                        "blanks": 0,
+                        "blobs": {},
+                        "code": 1,
+                        "comments": 0
+                    }
+                },
+                {
+                    "name": "./stats.sample/thirdparty.json",
+                    "stats": {
+                        "blanks": 0,
+                        "blobs": {},
+                        "code": 1,
+                        "comments": 0
+                    }
+                }
+            ],
+            "Markdown": [
+                {
+                    "name": "./README.md",
+                    "stats": {
+                        "blanks": 3,
+                        "blobs": {},
+                        "code": 0,
+                        "comments": 7
+                    }
+                }
+            ],
+            "Rust": [
+                {
+                    "name": "./visualizer/src/main.rs",
+                    "stats": {
+                        "blanks": 3,
+                        "blobs": {},
+                        "code": 10,
+                        "comments": 0
+                    }
+                },
+                {
+                    "name": "./visualizer/src/parser.rs",
+                    "stats": {
+                        "blanks": 4,
+                        "blobs": {},
+                        "code": 31,
+                        "comments": 11
+                    }
+                },
+                {
+                    "name": "./visualizer/src/format.rs",
+                    "stats": {
+                        "blanks": 15,
+                        "blobs": {},
+                        "code": 129,
+                        "comments": 3
+                    }
+                }
+            ],
+            "Sh": [
+                {
+                    "name": "./analyze.sh",
+                    "stats": {
+                        "blanks": 2,
+                        "blobs": {},
+                        "code": 9,
+                        "comments": 6
+                    }
+                },
+                {
+                    "name": "./download.sh",
+                    "stats": {
+                        "blanks": 1,
+                        "blobs": {},
+                        "code": 4,
+                        "comments": 1
+                    }
+                }
+            ],
+            "Toml": [
+                {
+                    "name": "./visualizer/Cargo.toml",
+                    "stats": {
+                        "blanks": 2,
+                        "blobs": {},
+                        "code": 8,
+                        "comments": 0
+                    }
+                }
+            ]
+        },
+        "code": 211,
+        "comments": 28,
+        "inaccurate": false,
+        "reports": []
+    }
+}
