@@ -69,6 +69,7 @@ fn build_details(data: &ExtractedData) -> String {
     out += build_lang_detail(&data.devtools).as_str();
     out += build_lang_detail(&data.userspace).as_str();
     out += build_lang_detail(&data.tests).as_str();
+    out += build_lang_detail(&data.docs).as_str();
     out += "</div>";
     format!("<section><h2>Details</h2>{out}</section>")
 }
@@ -88,6 +89,8 @@ fn build_lang_detail(data: &CodeCategory) -> String {
 
     let mut out = String::new();
     for (lang, v) in details {
+        // TODO: exclude 0 lines
+
         out += format!("<tr><th scope=\"row\">{lang}</th><td>{}</td><td>{}</td><td>{}</td></tr>",  v.code, v.comment, v.blank, ).as_str();
     }
     let out = format!("<tbody>{out}</tbody>");
