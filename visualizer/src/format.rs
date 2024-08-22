@@ -107,17 +107,23 @@ fn build_overview(data: &ExtractedData) -> String {
         + data.sdks.total.code
         + data.thirdparty.total.code
         + data.devtools.total.code
-        + data.userspace.total.code;
+        + data.userspace.total.code
+        + data.tests.total.code
+        + data.docs.total.code;
     let total_comments = data.core.total.comment
         + data.sdks.total.comment
         + data.thirdparty.total.comment
         + data.devtools.total.comment
-        + data.userspace.total.comment;
+        + data.userspace.total.comment
+        + data.tests.total.comment
+        + data.docs.total.comment;
     let total_blank = data.core.total.blank
         + data.sdks.total.blank
         + data.thirdparty.total.blank
         + data.devtools.total.blank
-        + data.userspace.total.blank;
+        + data.userspace.total.blank
+        + data.tests.total.blank
+        + data.docs.total.blank;
     let total = total_code + total_comments + total_blank;
 
     let running = data.core.total.code
@@ -127,7 +133,7 @@ fn build_overview(data: &ExtractedData) -> String {
 
     let msg_total = format!("There are over <b>{}</b> source code lines contributing to android.", build_number(total));
     let msg_running = format!("Roughly <b>{}</b> lines of code run on the average device.", build_number(running));
-    let msg_doc = format!("<b>{}</b> lines of comments tell the developers what the code does.", build_number(total_comments));
+    let msg_doc = format!("<b>{}</b> lines of comments and documentation tell the developers what the code does.", build_number(total_comments + data.docs.total.code + data.docs.total.blank));
     let msg_empty = format!("<b>{:.1}%</b> lines are empty.", (total_blank as f64 / total  as f64) * 100.);
 
     // TODO: doughnut chart with language percentages

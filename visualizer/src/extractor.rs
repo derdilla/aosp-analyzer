@@ -68,6 +68,9 @@ impl ExtractedData {
     fn extract(name: &str, stats: TokeiCodeStatistics, tests: &mut HashMap<Language, CodeStats>, docs: &mut HashMap<Language, CodeStats>) -> CodeCategory {
         let mut res = CodeCategory::new(name.to_string());
         for (lang, files) in stats.children.unwrap() {
+            if lang == "Json" || lang == "Xml" || lang == "Yaml" || lang == "Toml" || lang == "Ini" {
+                continue; // Skip is data entries
+            }
             let mut lang_stats = CodeStats::default();
             for report in files {
                 let entry = if report.name.contains("test") {
@@ -80,7 +83,7 @@ impl ExtractedData {
                     lang_stats.comment += report.stats.comments;
                     lang_stats.blank += report.stats.blanks;
                     continue;
-                }; // TODO: data (.xml (manifests ???) .json) files
+                };
                 // data could be client side and interactive
                 entry.code += report.stats.code;
                 entry.comment += report.stats.comments;
