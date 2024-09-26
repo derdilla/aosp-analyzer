@@ -1,7 +1,7 @@
 Script to calculate the size of the AOSP source code. For more meaning behind 
 the data, check out the blog post(TODO).
 
-For the version used in the [first blog post](https://derdilla.com/blog/size-aosp.html), look [here](https://github.com/NobodyForNothing/aosp-analyzer/tree/0e31f9099ba5c913aa06b7bba192aa231c27ddb0).
+For the version used in the [first blog post](https://derdilla.com/blog/size-aosp.html), look [here](https://github.com/derdilla/aosp-analyzer/tree/0e31f9099ba5c913aa06b7bba192aa231c27ddb0).
 
 ## Usage
 
