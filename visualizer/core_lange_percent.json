@@ -1,0 +1,55 @@
+{
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "A simple donut chart with embedded data.",
+    "data": {
+        "values": [{"category":"Python","value":0.04360968},{"category":"C","value":0.26575348},{"category":"C++","value":0.27263388},{"category":"Java","value":0.2834271},{"category":"Other","value":0.13457589}]
+    },
+    "layer": [
+        {
+            "params": [
+                {
+                    "name": "highlight",
+                    "select": { "type": "point", "on": "pointerover" }
+                },
+            ],
+            "mark": {
+                "type": "arc",
+                "innerRadius": 50,
+                "outerRadius": 100,
+                "cornerRadius": 6,
+                "padAngle": 0.04
+            },
+            "encoding": {
+                "color": { "field": "category", "type": "nominal", "legend": null },
+                "opacity": {
+                    "condition": [
+                        {
+                            "param": "highlight",
+                            "value": 1
+                        }
+                    ],
+                    "value": 0.70
+                },
+                "tooltip": [
+                    { "field": "value", "type": "quantitative", "title": "%" }
+                ]
+            },
+        },
+        {
+            "mark": { "type": "text", "radius": 75 },
+            "encoding": {
+                "text": { "field": "category", "type": "nominal" }
+            }
+        },
+        {
+            "mark": {
+                "type": "text",
+                "text": "Lanugages"
+            },
+
+        }
+    ],
+    "encoding": {
+        "theta": { "field": "value", "type": "quantitative", "stack": true }
+    }
+}

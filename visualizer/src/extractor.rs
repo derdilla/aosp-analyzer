@@ -15,7 +15,7 @@ pub struct ExtractedData {
 impl ExtractedData {
     pub fn new(mut data: Data) -> Self {
         let mut tests_details = HashMap::new();
-        /// Documentation only files.
+        // Documentation only files.
         let mut doc_details = HashMap::new();
         
         let core = Self::extract("Core", data.core.remove("Total").unwrap(), &mut tests_details, &mut doc_details);
