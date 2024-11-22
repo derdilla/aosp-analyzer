@@ -11,34 +11,14 @@
 </head>
 
 <body>
-    <div id="vis"></div>
+    <div id="lang-percent"></div>
     <script type="text/javascript">
-        const spec = {
+        function showLangPercent(data) {
+            const spec = {
             "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
             "description": "A simple donut chart with embedded data.",
             "data": {
-                "values": [
-            {
-                "category": "Python",
-                "value": 0.04360968
-            },
-            {
-                "category": "C",
-                "value": 0.26575348
-            },
-            {
-                "category": "C++",
-                "value": 0.27263388
-            },
-            {
-                "category": "Java",
-                "value": 0.2834271
-            },
-            {
-                "category": "Other",
-                "value": 0.13457584
-            }
-        ]
+                "values": data,
             },
             "layer": [
                 {
@@ -53,7 +33,7 @@
                         "innerRadius": 50,
                         "outerRadius": 100,
                         "cornerRadius": 6,
-                        "padAngle": 0.04,
+                        "padAngle": 0.04
                     },
                     "encoding": {
                         "color": { "field": "category", "type": "nominal", "legend": null },
@@ -67,7 +47,8 @@
                             "value": 0.70
                         },
                         "tooltip": [
-                            { "field": "value", "type": "quantitative", "title": "%" }
+                            { "field": "value", "type": "quantitative", "title": "%" },
+                            { "field": "loc", "type": "quantitative", "title": "Lines of code" }
                         ],
                     },
                 },
@@ -90,11 +71,11 @@
             }
         };
 
-        vegaEmbed('#vis', spec, {renderer: "svg", actions: false})
+        vegaEmbed('#lang-percent', spec, { renderer: "svg", actions: false })
             .catch(console.error);
-
-        view.run(spec);
-
+        }
+        
+        showLangPercent([{"category":"Rust","value":0.022673236,"loc":2930753},{"category":"Python","value":0.04360968,"loc":5637007},{"category":"C","value":0.26575348,"loc":34351415},{"category":"C++","value":0.27263388,"loc":35240781},{"category":"Java","value":0.2834271,"loc":36635917},{"category":"Other","value":0.11190264,"loc":14464586}]);
     </script>
 </body>
 

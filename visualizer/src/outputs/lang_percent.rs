@@ -5,13 +5,15 @@ use serde::Serialize;
 use crate::parser::TokeiCodeStatistics;
 
 /// Minimum percent to show as own category in the graph.
-const MIN_PERCENT: f32 = 0.03;
+const MIN_PERCENT: f32 = 0.02;
 
 #[derive(Debug, Serialize)]
 struct Lang {
     category: String,
     #[serde(rename = "value")]
     percent: f32,
+    #[serde(rename = "loc")]
+    lines_of_code: u64,
 }
 
 
@@ -22,13 +24,15 @@ pub fn create_stat(data: HashMap<String, TokeiCodeStatistics>) -> String {
     // accumulate stats
     let mut stats = Vec::new();
     let mut other: f32 = 0.0;
+    let mut other_lines: u64 = 0;
     for (category, lines) in data {
         let percent = (lines.code as f64 / total_lines as f64) as f32;
         if percent > MIN_PERCENT {
-            stats.push(Lang{category, percent});
+            stats.push(Lang{category, percent, lines_of_code: lines.code as u64});
         } else {
             println!("{}: {}\t{}/{}", &category, &percent,&lines.code,&total_lines);
             other += percent as f32;
+            other_lines += lines.code as u64;
         }
     }
     
@@ -36,7 +40,7 @@ pub fn create_stat(data: HashMap<String, TokeiCodeStatistics>) -> String {
     stats.sort_by(|a, b| a.percent.partial_cmp(&b.percent).expect("should not contain NaN values"));
 
     // add "Other" category to the end
-    stats.push(Lang {category: String::from("Other"), percent: other});
+    stats.push(Lang {category: String::from("Other"), percent: other, lines_of_code: other_lines});
 
     serde_json::to_string(&stats).expect("Data created to be jsonizable")
 }
