@@ -12,3 +12,12 @@ Each of the tree steps is independend from another, so you can quickly see the r
 3. `cargo run` the visualizer to generate a index.html (very fast)
 
 *note: The stats directory should be next to the cwd executing the analyzer (../stats). The source code is the intended place for further customization.*
+
+## TODO
+
+- Try to use [vega](https://github.com/vega/vega) for stats
+- Add percentage of language stats with toggleable categories
+  - Area of the code: Core, SDKs, Third-party, ...
+  - Code kind: Code, comments, blank
+- Allow generating time series
+- Some sample historical data
